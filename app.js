@@ -1,48 +1,69 @@
-// Import Firebase SDKs
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-// Firebase configuration
+// Your Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAscyG9Z24pE54FVcg3XSD-SMRvFT1Xy8M",
   authDomain: "test1-3f99e.firebaseapp.com",
   databaseURL: "https://test1-3f99e-default-rtdb.firebaseio.com",
   projectId: "test1-3f99e",
-  storageBucket: "test1-3f99e.appspot.com",
+  storageBucket: "test1-3f99e.firebasestorage.app",
   messagingSenderId: "259892994980",
   appId: "1:259892994980:web:6b1ee3dccec02deb79d731",
   measurementId: "G-44G0B5ENPJ"
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-// Handle appointment booking
-document.getElementById("appointmentForm").addEventListener("submit", (e) => {
+// Reference to appointments in Firebase
+const appointmentsRef = db.ref("appointments");
+
+// Handle form submission
+document.getElementById("appointmentForm").addEventListener("submit", function (e) {
   e.preventDefault();
+
   const name = document.getElementById("name").value;
   const phone = document.getElementById("phone").value;
-  const datetime = document.getElementById("datetime").value;
+  const date = document.getElementById("date").value;
+  const time = document.getElementById("time").value;
 
-  set(ref(db, "appointments/" + phone), {
-    name: name,
-    phone: phone,
-    datetime: datetime
-  })
-    .then(() => alert("Appointment booked successfully!"))
-    .catch((error) => alert("Error: " + error));
+  appointmentsRef.child(phone).set({
+    name,
+    phone,
+    date,
+    time,
+  });
+
+  alert("Appointment saved!");
+
+  // Clear form fields after submission
+  document.getElementById("appointmentForm").reset();
 });
 
-// Handle appointment update
-document.getElementById("updateForm").addEventListener("submit", (e) => {
+// Handle update form
+document.getElementById("updateForm").addEventListener("submit", function (e) {
   e.preventDefault();
-  const phone = document.getElementById("updatePhone").value;
-  const datetime = document.getElementById("updateDatetime").value;
 
-  update(ref(db, "appointments/" + phone), {
-    datetime: datetime
-  })
-    .then(() => alert("Appointment updated successfully!"))
-    .catch((error) => alert("Error: " + error));
+  const updatePhone = document.getElementById("updatePhone").value;
+  const newDate = document.getElementById("updateDate").value;
+  const newTime = document.getElementById("updateTime").value;
+
+  const appointmentRef = appointmentsRef.child(updatePhone);
+
+  appointmentRef.once("value").then((snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      alert(`Current Appointment:\nDate: ${data.date}\nTime: ${data.time}`);
+
+      // Now update with new values
+      appointmentRef.update({
+        date: newDate,
+        time: newTime,
+      });
+
+      alert("Appointment updated!");
+      document.getElementById("updateForm").reset();
+    } else {
+      alert("No appointment found for this phone number!");
+    }
+  });
 });
